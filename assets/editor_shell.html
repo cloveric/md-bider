@@ -147,6 +147,34 @@
     .status.error {
       color: var(--danger);
     }
+    .lang-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+      min-height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid #d3dbe9;
+    }
+    .lang-label {
+      font-size: 12px;
+      color: #51617a;
+    }
+    .lang-select {
+      min-height: 24px;
+      border-radius: 6px;
+      border: 1px solid #bcc6d8;
+      background: #ffffff;
+      color: #1f2f45;
+      font-size: 12px;
+      padding: 0 6px;
+      outline: none;
+    }
+    .lang-select:focus {
+      border-color: #6e8bc8;
+      box-shadow: 0 0 0 2px rgba(110, 139, 200, 0.2);
+    }
     .tabs {
       display: flex;
       align-items: center;
@@ -242,6 +270,13 @@
         </div>
       </div>
       <div class="toolbar-right">
+        <label class="lang-wrap" for="langSelect">
+          <span id="langLabel" class="lang-label">语言</span>
+          <select id="langSelect" class="lang-select">
+            <option value="zh-CN">中文</option>
+            <option value="en">English</option>
+          </select>
+        </label>
         <span id="filePath" class="path">未打开文件</span>
         <span id="status" class="status">准备中...</span>
       </div>
@@ -266,6 +301,8 @@
     const statusEl = document.getElementById("status");
     const pathEl = document.getElementById("filePath");
     const tabsEl = document.getElementById("tabs");
+    const langLabelEl = document.getElementById("langLabel");
+    const langSelectEl = document.getElementById("langSelect");
     const modeButtons = {
       sv: document.getElementById("svBtn"),
       ir: document.getElementById("irBtn"),
@@ -278,7 +315,111 @@
     const ENGINE_CSS_B64 = window.__ENGINE_CSS_B64__ || "";
     const ENGINE_ICON_B64 = window.__ENGINE_ICON_B64__ || "";
     const ENGINE_I18N_B64 = window.__ENGINE_I18N_B64__ || "";
-    const UNTITLED_PREFIX = "未命名 ";
+    const APP_LOCALE_KEY = "md-bider.locale";
+    const UNTITLED_PREFIX_BY_LOCALE = {
+      "zh-CN": "未命名 ",
+      en: "Untitled ",
+    };
+    const UI_TEXT = {
+      "zh-CN": {
+        language: "语言",
+        chinese: "中文",
+        english: "English",
+        new: "新建",
+        open: "打开",
+        save: "保存",
+        saveAs: "另存为",
+        modeSv: "分栏 SV",
+        modeIr: "所见即所得 IR",
+        modeWysiwyg: "富文本 WYSIWYG",
+        pathNotOpened: "未打开文件",
+        closeTab: "关闭标签",
+        closeUnsavedConfirm: "标签“{title}”尚未保存，确定关闭吗？",
+        statusPreparing: "准备中...",
+        statusSwitchTab: "已切换标签",
+        statusCloseTab: "已关闭标签",
+        statusEditing: "编辑中",
+        statusReady: "就绪",
+        statusNewTab: "新建标签",
+        statusFileOpened: "文件已打开",
+        statusNewFile: "新建文件",
+        statusSaved: "保存成功",
+        statusModeSwitch: "切换模式: {mode}",
+        statusLanguageSwitch: "界面语言: 中文",
+        statusEditorLoadError: "编辑引擎未加载: {reason}",
+        statusEditorUnavailable: "编辑引擎未加载。",
+        statusUnknownError: "未知错误",
+        statusGenericError: "发生错误",
+      },
+      en: {
+        language: "Language",
+        chinese: "Chinese",
+        english: "English",
+        new: "New",
+        open: "Open",
+        save: "Save",
+        saveAs: "Save As",
+        modeSv: "Split SV",
+        modeIr: "Instant IR",
+        modeWysiwyg: "Rich Text WYSIWYG",
+        pathNotOpened: "No file opened",
+        closeTab: "Close tab",
+        closeUnsavedConfirm: "Tab \"{title}\" has unsaved changes. Close anyway?",
+        statusPreparing: "Preparing...",
+        statusSwitchTab: "Switched tab",
+        statusCloseTab: "Closed tab",
+        statusEditing: "Editing",
+        statusReady: "Ready",
+        statusNewTab: "New tab",
+        statusFileOpened: "File opened",
+        statusNewFile: "New file",
+        statusSaved: "Saved",
+        statusModeSwitch: "Mode switched: {mode}",
+        statusLanguageSwitch: "Language: English",
+        statusEditorLoadError: "Editor engine not loaded: {reason}",
+        statusEditorUnavailable: "Editor engine is unavailable.",
+        statusUnknownError: "Unknown error",
+        statusGenericError: "An error occurred",
+      },
+    };
+
+    function normalizeLocale(locale) {
+      const raw = String(locale || "").trim().toLowerCase();
+      return raw.startsWith("zh") ? "zh-CN" : "en";
+    }
+
+    function readStoredLocale() {
+      try {
+        return window.localStorage.getItem(APP_LOCALE_KEY) || "";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function saveStoredLocale(locale) {
+      try {
+        window.localStorage.setItem(APP_LOCALE_KEY, locale);
+      } catch (_) {
+        // ignore storage failures (private mode / policy)
+      }
+    }
+
+    let appLocale = normalizeLocale(readStoredLocale() || document.documentElement.lang || navigator.language);
+
+    function textTable() {
+      return UI_TEXT[appLocale] || UI_TEXT["zh-CN"];
+    }
+
+    function untitledPrefix() {
+      return UNTITLED_PREFIX_BY_LOCALE[appLocale] || UNTITLED_PREFIX_BY_LOCALE["zh-CN"];
+    }
+
+    function t(key, vars = {}) {
+      const template = textTable()[key] || key;
+      return String(template).replace(/\{(\w+)\}/g, (_all, token) => {
+        return Object.prototype.hasOwnProperty.call(vars, token) ? String(vars[token]) : "";
+      });
+    }
 
     function hostSend(message) {
       if (window.ipc && typeof window.ipc.postMessage === "function") {
@@ -292,8 +433,53 @@
     }
 
     function setPath(path) {
-      pathEl.textContent = path || "未打开文件";
+      pathEl.textContent = path || t("pathNotOpened");
       pathEl.title = pathEl.textContent;
+    }
+
+    function refreshUntitledTabTitles() {
+      const prefix = untitledPrefix();
+      tabs.forEach((tab) => {
+        if (Number.isInteger(tab.untitledIndex) && tab.untitledIndex > 0) {
+          tab.title = `${prefix}${tab.untitledIndex}`;
+        }
+      });
+    }
+
+    function applyUiLanguage() {
+      document.documentElement.lang = appLocale;
+      document.getElementById("newBtn").textContent = t("new");
+      document.getElementById("openBtn").textContent = t("open");
+      document.getElementById("saveBtn").textContent = t("save");
+      document.getElementById("saveAsBtn").textContent = t("saveAs");
+      modeButtons.sv.textContent = t("modeSv");
+      modeButtons.ir.textContent = t("modeIr");
+      modeButtons.wysiwyg.textContent = t("modeWysiwyg");
+      langLabelEl.textContent = t("language");
+      langSelectEl.options[0].textContent = t("chinese");
+      langSelectEl.options[1].textContent = t("english");
+      langSelectEl.value = appLocale;
+      refreshUntitledTabTitles();
+      renderTabs();
+      const active = getActiveTab();
+      setPath(active?.path || "");
+    }
+
+    function setLocale(locale, { announce = true, recreateEditor = true } = {}) {
+      const next = normalizeLocale(locale);
+      if (next === appLocale) {
+        return;
+      }
+      appLocale = next;
+      saveStoredLocale(appLocale);
+      applyUiLanguage();
+      if (recreateEditor && editor) {
+        persistActiveTabContent();
+        createEditor(getActiveTab()?.content || "");
+      }
+      if (announce) {
+        setStatus(t("statusLanguageSwitch"));
+      }
     }
 
     function updateModeButtons() {
@@ -329,7 +515,7 @@
 
       try {
         if (!ENGINE_JS_B64 || !ENGINE_CSS_B64) {
-          engineError = "内嵌资源未注入";
+          engineError = appLocale === "en" ? "embedded assets are missing" : "内嵌资源未注入";
           return false;
         }
         const cssText = decodeBase64Utf8(ENGINE_CSS_B64);
@@ -384,8 +570,18 @@
     }
 
     function parseUntitledIndex(title) {
-      const match = new RegExp(`^${UNTITLED_PREFIX}(\\d+)$`).exec(String(title || "").trim());
-      return match ? Number(match[1]) : null;
+      const normalizedTitle = String(title || "").trim();
+      const prefixes = Object.values(UNTITLED_PREFIX_BY_LOCALE);
+      for (const prefix of prefixes) {
+        if (!normalizedTitle.startsWith(prefix)) {
+          continue;
+        }
+        const suffix = normalizedTitle.slice(prefix.length).trim();
+        if (/^\d+$/.test(suffix)) {
+          return Number(suffix);
+        }
+      }
+      return null;
     }
 
     function acquireUntitledIndex(preferred = null) {
@@ -409,16 +605,17 @@
     }
 
     function ensureUntitledTitle(tab, preferredTitle = "") {
+      const prefix = untitledPrefix();
       if (Number.isInteger(tab.untitledIndex) && tab.untitledIndex > 0) {
         untitledIndexPool.add(tab.untitledIndex);
-        tab.title = `${UNTITLED_PREFIX}${tab.untitledIndex}`;
+        tab.title = `${prefix}${tab.untitledIndex}`;
         return;
       }
 
       const preferredIndex = parseUntitledIndex(preferredTitle) ?? parseUntitledIndex(tab.title);
       const index = acquireUntitledIndex(preferredIndex);
       tab.untitledIndex = index;
-      tab.title = `${UNTITLED_PREFIX}${index}`;
+      tab.title = `${prefix}${index}`;
     }
 
     function applyTabPath(tab, path, preferredTitle = "") {
@@ -469,7 +666,7 @@
         const closeEl = document.createElement("button");
         closeEl.className = "tab-close";
         closeEl.textContent = "×";
-        closeEl.title = "关闭标签";
+        closeEl.title = t("closeTab");
         closeEl.addEventListener("click", (event) => {
           event.stopPropagation();
           closeTab(tab.id);
@@ -502,7 +699,7 @@
         setPath(active.path || "");
         setEditorContent(active.content || "");
       }
-      setStatus("已切换标签");
+      setStatus(t("statusSwitchTab"));
     }
 
     function addTab({ id, path = "", content = "", title = "", activate = true }) {
@@ -555,7 +752,7 @@
       }
       const tab = tabs[index];
       if (tab.dirty) {
-        const ok = window.confirm(`标签“${tab.title}”尚未保存，确定关闭吗？`);
+        const ok = window.confirm(t("closeUnsavedConfirm", { title: tab.title }));
         if (!ok) {
           return;
         }
@@ -576,7 +773,7 @@
         renderTabs();
         setPath("");
         setEditorContent("");
-        setStatus("已关闭标签");
+        setStatus(t("statusCloseTab"));
         return;
       }
 
@@ -591,7 +788,7 @@
         setPath(active.path || "");
         setEditorContent(active.content || "");
       }
-      setStatus("已关闭标签");
+      setStatus(t("statusCloseTab"));
     }
 
     function upsertOpenedTab(tabId, path, content) {
@@ -624,25 +821,27 @@
 
     function createEditor(value = "") {
       if (!ensureEngineLoaded()) {
-        const reason = engineError || "未知错误";
-        setStatus(`编辑引擎未加载: ${reason}`, true);
+        const reason = engineError || t("statusUnknownError");
+        setStatus(t("statusEditorLoadError", { reason }), true);
         return;
       }
       const EditorCtor = window[ENGINE_GLOBAL];
       if (!EditorCtor) {
-        setStatus("编辑引擎未加载。", true);
+        setStatus(t("statusEditorUnavailable"), true);
         return;
       }
 
       const container = document.getElementById("editorRoot");
       container.innerHTML = "";
+      const editorLang = appLocale === "en" ? "en" : "zh_CN";
+      const editorI18n = appLocale === "en" ? undefined : window[ENGINE_I18N_GLOBAL];
 
       editor = new EditorCtor("editorRoot", {
         mode: currentMode,
         height: "100%",
         value,
-        lang: "zh_CN",
-        i18n: window[ENGINE_I18N_GLOBAL],
+        lang: editorLang,
+        i18n: editorI18n,
         icon: "",
         toolbar: [
           "emoji",
@@ -691,7 +890,7 @@
             return;
           }
           markActiveTabDirty();
-          setStatus("编辑中");
+          setStatus(t("statusEditing"));
         },
         after() {
           updateModeButtons();
@@ -699,7 +898,7 @@
             hostSend({ cmd: "app_ready", tab_id: activeTabId || null });
             readySent = true;
           }
-          setStatus("就绪");
+          setStatus(t("statusReady"));
         },
       });
     }
@@ -711,7 +910,7 @@
       persistActiveTabContent();
       currentMode = mode;
       createEditor(getActiveTab()?.content || "");
-      setStatus(`切换模式: ${mode.toUpperCase()}`);
+      setStatus(t("statusModeSwitch", { mode: mode.toUpperCase() }));
     }
 
     function requestOpenFile() {
@@ -733,6 +932,29 @@
       hostSend(payload);
     }
 
+    function translateHostMessage(message) {
+      const source = String(message || "").trim();
+      if (!source) {
+        return source;
+      }
+      if (appLocale !== "en") {
+        return source;
+      }
+      if (source === "编辑器已就绪") {
+        return "Editor is ready";
+      }
+      if (source.startsWith("打开失败:")) {
+        return `Open failed: ${source.slice("打开失败:".length).trim()}`;
+      }
+      if (source.startsWith("保存失败:")) {
+        return `Save failed: ${source.slice("保存失败:".length).trim()}`;
+      }
+      if (source.startsWith("无法识别指令:")) {
+        return `Unknown command: ${source.slice("无法识别指令:".length).trim()}`;
+      }
+      return source;
+    }
+
     window.__HOST__ = {
       onMessage(message) {
         if (!message || !message.event) {
@@ -741,7 +963,7 @@
         if (message.event === "file_opened") {
           const tabId = message.tab_id || nextTabId();
           upsertOpenedTab(tabId, message.path || "", message.content || "");
-          setStatus(message.path ? "文件已打开" : "新建文件");
+          setStatus(message.path ? t("statusFileOpened") : t("statusNewFile"));
           return;
         }
         if (message.event === "file_saved") {
@@ -754,15 +976,18 @@
             setPath(message.path || target?.path || "");
           }
           renderTabs();
-          setStatus("保存成功");
+          setStatus(t("statusSaved"));
           return;
         }
         if (message.event === "status") {
-          setStatus(message.message || "");
+          const localized = translateHostMessage(message.message || "");
+          setStatus(localized);
           return;
         }
         if (message.event === "error") {
-          setStatus(message.message || "发生错误", true);
+          const fallback = t("statusGenericError");
+          const localized = translateHostMessage(message.message || fallback);
+          setStatus(localized || fallback, true);
         }
       },
     };
@@ -771,7 +996,7 @@
       persistActiveTabContent();
       const tab = addTab({ id: nextTabId(), content: "", activate: true });
       setEditorContent(tab.content);
-      setStatus("新建标签");
+      setStatus(t("statusNewTab"));
     });
     document.getElementById("openBtn").addEventListener("click", () => {
       requestOpenFile();
@@ -785,6 +1010,10 @@
     modeButtons.sv.addEventListener("click", () => switchMode("sv"));
     modeButtons.ir.addEventListener("click", () => switchMode("ir"));
     modeButtons.wysiwyg.addEventListener("click", () => switchMode("wysiwyg"));
+    langSelectEl.addEventListener("change", (event) => {
+      const next = event?.target?.value || "zh-CN";
+      setLocale(next, { announce: true, recreateEditor: true });
+    });
 
     window.addEventListener("keydown", (event) => {
       const hotkey = event.ctrlKey || event.metaKey;
@@ -810,6 +1039,8 @@
       }
     });
 
+    applyUiLanguage();
+    setStatus(t("statusPreparing"));
     ensureOneTab();
     updateModeButtons();
     createEditor(getActiveTab()?.content || "");
