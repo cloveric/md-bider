@@ -1,4 +1,4 @@
-# md-bider（马得笔）
+# md-bider（马得笔）— 轻量但强大的 Markdown 文件浏览器与编辑器
 
 [English](README.md) | 简体中文
 

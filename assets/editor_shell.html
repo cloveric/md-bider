@@ -253,6 +253,45 @@
       overflow: hidden;
       box-shadow: 0 10px 28px rgba(42, 68, 110, 0.09);
     }
+
+    /* ── Preview action bar: vertical sidebar on right ── */
+    .mdbider-preview {
+      display: flex !important;
+      flex-direction: row !important;
+    }
+    .mdbider-preview > .mdbider-reset {
+      flex: 1;
+      order: 0;
+      min-width: 0;
+    }
+    .mdbider-preview__action {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 4px;
+      padding: 8px 4px !important;
+      text-align: center !important;
+      order: 1;
+      border-top: none !important;
+      border-left: 1px solid var(--toolbar-border) !important;
+      min-width: 36px;
+      width: auto !important;
+      height: auto !important;
+    }
+    .mdbider-preview__action button {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      margin: 2px 0 !important;
+      padding: 6px !important;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+    }
+    .mdbider-preview__action button svg {
+      width: 16px;
+      height: 16px;
+    }
   </style>
 </head>
 <body>
@@ -329,9 +368,9 @@
         open: "打开",
         save: "保存",
         saveAs: "另存为",
-        modeSv: "分屏预览 SV",
-        modeIr: "即时渲染 IR",
-        modeWysiwyg: "所见即所得 WYSIWYG",
+        modeSv: "分屏预览",
+        modeIr: "即时渲染",
+        modeWysiwyg: "所见即所得",
         pathNotOpened: "未打开文件",
         closeTab: "关闭标签",
         closeUnsavedConfirm: "标签“{title}”尚未保存，确定关闭吗？",
@@ -350,6 +389,17 @@
         statusEditorUnavailable: "编辑引擎未加载。",
         statusUnknownError: "未知错误",
         statusGenericError: "发生错误",
+        tooltipNew: "新建 (Ctrl+N)",
+        tooltipOpen: "打开 (Ctrl+O)",
+        tooltipSave: "保存 (Ctrl+S)",
+        tooltipSaveAs: "另存为 (Ctrl+Shift+S)",
+        tooltipModeSv: "分屏预览",
+        tooltipModeIr: "即时渲染",
+        tooltipModeWysiwyg: "所见即所得",
+        previewDesktop: "桌面视图",
+        previewTablet: "平板视图",
+        previewMobile: "手机视图",
+        previewWechat: "复制到微信公众号",
       },
       en: {
         language: "Language",
@@ -380,6 +430,17 @@
         statusEditorUnavailable: "Editor engine is unavailable.",
         statusUnknownError: "Unknown error",
         statusGenericError: "An error occurred",
+        tooltipNew: "New (Ctrl+N)",
+        tooltipOpen: "Open (Ctrl+O)",
+        tooltipSave: "Save (Ctrl+S)",
+        tooltipSaveAs: "Save As (Ctrl+Shift+S)",
+        tooltipModeSv: "Split Preview SV",
+        tooltipModeIr: "Instant Render IR",
+        tooltipModeWysiwyg: "WYSIWYG",
+        previewDesktop: "Desktop view",
+        previewTablet: "Tablet view",
+        previewMobile: "Mobile view",
+        previewWechat: "Copy for WeChat",
       },
     };
 
@@ -450,12 +511,19 @@
     function applyUiLanguage() {
       document.documentElement.lang = appLocale;
       document.getElementById("newBtn").textContent = t("new");
+      document.getElementById("newBtn").title = t("tooltipNew");
       document.getElementById("openBtn").textContent = t("open");
+      document.getElementById("openBtn").title = t("tooltipOpen");
       document.getElementById("saveBtn").textContent = t("save");
+      document.getElementById("saveBtn").title = t("tooltipSave");
       document.getElementById("saveAsBtn").textContent = t("saveAs");
+      document.getElementById("saveAsBtn").title = t("tooltipSaveAs");
       modeButtons.sv.textContent = t("modeSv");
+      modeButtons.sv.title = t("tooltipModeSv");
       modeButtons.ir.textContent = t("modeIr");
+      modeButtons.ir.title = t("tooltipModeIr");
       modeButtons.wysiwyg.textContent = t("modeWysiwyg");
+      modeButtons.wysiwyg.title = t("tooltipModeWysiwyg");
       langLabelEl.textContent = t("language");
       langSelectEl.options[0].textContent = t("chinese");
       langSelectEl.options[1].textContent = t("english");
@@ -820,6 +888,44 @@
       }
     }
 
+    const PREVIEW_ICONS = {
+      desktop: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+      tablet: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+      mobile: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg>',
+    };
+
+    function patchPreviewActionBar() {
+      const actionBar = document.querySelector('.mdbider-preview__action');
+      if (!actionBar || actionBar.dataset.patched) return;
+
+      const buttons = actionBar.querySelectorAll('button');
+      const textButtons = [];
+
+      buttons.forEach(btn => {
+        if (btn.querySelector('svg')) {
+          btn.title = t('previewWechat');
+        } else {
+          textButtons.push(btn);
+        }
+      });
+
+      const iconEntries = [
+        { key: 'previewDesktop', svg: PREVIEW_ICONS.desktop },
+        { key: 'previewTablet', svg: PREVIEW_ICONS.tablet },
+        { key: 'previewMobile', svg: PREVIEW_ICONS.mobile },
+      ];
+
+      textButtons.forEach((btn, i) => {
+        if (i < iconEntries.length) {
+          const entry = iconEntries[i];
+          btn.innerHTML = entry.svg;
+          btn.title = t(entry.key);
+        }
+      });
+
+      actionBar.dataset.patched = 'true';
+    }
+
     function createEditor(value = "") {
       if (!ensureEngineLoaded()) {
         const reason = engineError || t("statusUnknownError");
@@ -892,6 +998,8 @@
         },
         after() {
           updateModeButtons();
+          patchPreviewActionBar();
+          setTimeout(patchPreviewActionBar, 200);
           if (!readySent) {
             hostSend({ cmd: "app_ready", tab_id: activeTabId || null });
             readySent = true;
