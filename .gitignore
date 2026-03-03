@@ -1,5 +1,6 @@
 # Ignore build artifacts
 /target/
+/dist/
 
 # WebView2 runtime data generated next to exe
 *.exe.WebView2/
