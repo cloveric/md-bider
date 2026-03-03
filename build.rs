@@ -14,7 +14,7 @@ fn main() {
 #[cfg(target_os = "windows")]
 fn embed_windows_icon() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);
-    let ico_path = out_dir.join("md-beader.ico");
+    let ico_path = out_dir.join("md-bider.ico");
     write_ico(&ico_path)?;
 
     let mut res = winresource::WindowsResource::new();

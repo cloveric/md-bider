@@ -1,14 +1,14 @@
 use std::fs;
 use std::path::PathBuf;
 
-use markdown_reader::ui::{
+use md_bider::ui::{
     default_cjk_font_candidates, default_monospace_font_candidates, default_ui_font_candidates,
     first_existing_path,
 };
 
 #[test]
 fn picks_first_existing_font_path() {
-    let base = std::env::temp_dir().join("md_reader_font_pick_test");
+    let base = std::env::temp_dir().join("md_bider_font_pick_test");
     let _ = fs::remove_dir_all(&base);
     fs::create_dir_all(&base).expect("create temp dir");
 

@@ -3,8 +3,8 @@
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use markdown_reader::desktop::{HostEvent, IpcCommand, to_webview_script};
-use markdown_reader::io::{read_text_with_fallback, write_text_utf8};
+use md_bider::desktop::{HostEvent, IpcCommand, to_webview_script};
+use md_bider::io::{read_text_with_fallback, write_text_utf8};
 use rfd::FileDialog;
 use tao::dpi::LogicalSize;
 use tao::event::{Event, WindowEvent};
@@ -135,7 +135,7 @@ fn main() -> wry::Result<()> {
     let window_icon = load_window_icon();
 
     let window = WindowBuilder::new()
-        .with_title("md-beader")
+        .with_title("md-bider")
         .with_window_icon(window_icon)
         .with_inner_size(LogicalSize::new(1280.0, 860.0))
         .build(&event_loop)

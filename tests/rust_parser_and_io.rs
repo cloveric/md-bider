@@ -1,12 +1,12 @@
 use std::fs;
 use std::path::PathBuf;
 
-use markdown_reader::io::{read_text_with_fallback, write_text_utf8};
-use markdown_reader::parser::parse_markdown;
-use markdown_reader::{Block, ListKind, Span};
+use md_bider::io::{read_text_with_fallback, write_text_utf8};
+use md_bider::parser::parse_markdown;
+use md_bider::{Block, ListKind, Span};
 
 fn temp_file(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("md_reader_rust_{name}"))
+    std::env::temp_dir().join(format!("md_bider_rust_{name}"))
 }
 
 #[test]

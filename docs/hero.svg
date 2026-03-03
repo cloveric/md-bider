@@ -15,7 +15,7 @@
   <ellipse cx="960" cy="70" rx="260" ry="140" fill="url(#accent)"/>
 
   <text x="96" y="158" fill="#F3F7FF" font-family="Segoe UI, Microsoft YaHei, Arial" font-size="54" font-weight="700">
-    md-beader
+    md-bider
   </text>
   <text x="96" y="212" fill="#D4E3FF" font-family="Segoe UI, Microsoft YaHei, Arial" font-size="24" font-weight="500">
     Rust + WebView2 的离线 Markdown 编辑与审阅工作台

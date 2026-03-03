@@ -1,11 +1,11 @@
 # Contributing
 
-Thank you for your interest in improving md-beader.
+Thank you for your interest in improving md-bider.
 
 ## Development Setup
 
 ```powershell
-cd C:\Users\hangw\md-beader
+cd C:\Users\hangw\md-bider
 cargo test
 cargo build --release
 ```

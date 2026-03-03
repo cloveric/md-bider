@@ -1,4 +1,4 @@
-use markdown_reader::ui::{ReaderTheme, metrics_for_theme};
+use md_bider::ui::{ReaderTheme, metrics_for_theme};
 
 #[test]
 fn has_three_reading_theme_presets() {

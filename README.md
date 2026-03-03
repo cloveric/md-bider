@@ -1,7 +1,7 @@
-# md-beader
+# md-bider
 
 <div align="center">
-  <img src="docs/hero.svg" alt="md-beader" width="100%" />
+  <img src="docs/hero.svg" alt="md-bider" width="100%" />
 
   <p>
     <strong>面向中文创作场景的桌面级 Markdown 编辑与审阅工作台</strong><br/>
@@ -13,16 +13,16 @@
     <img src="https://img.shields.io/badge/Platform-Windows-0078D4" alt="Platform" />
     <img src="https://img.shields.io/badge/Mode-IR%20%7C%20SV%20%7C%20WYSIWYG-2A5CAA" alt="Modes" />
     <img src="https://img.shields.io/badge/Network-Offline%20First-1D7F5F" alt="Offline" />
-    <img src="https://github.com/cloveric/md-beader/actions/workflows/ci.yml/badge.svg" alt="CI" />
-    <img src="https://github.com/cloveric/md-beader/actions/workflows/release.yml/badge.svg" alt="Release" />
-    <img src="https://img.shields.io/github/v/release/cloveric/md-beader?display_name=tag" alt="Latest Release" />
-    <img src="https://img.shields.io/github/downloads/cloveric/md-beader/total" alt="Downloads" />
+    <img src="https://github.com/cloveric/md-bider/actions/workflows/ci.yml/badge.svg" alt="CI" />
+    <img src="https://github.com/cloveric/md-bider/actions/workflows/release.yml/badge.svg" alt="Release" />
+    <img src="https://img.shields.io/github/v/release/cloveric/md-bider?display_name=tag" alt="Latest Release" />
+    <img src="https://img.shields.io/github/downloads/cloveric/md-bider/total" alt="Downloads" />
   </p>
 </div>
 
 ## 为什么是它
 
-md-beader 不是“在线文档工具”的桌面壳，而是一套针对本地 Markdown 使用习惯优化的工作台：
+md-bider 不是“在线文档工具”的桌面壳，而是一套针对本地 Markdown 使用习惯优化的工作台：
 
 - 默认进入 `IR` 所见即所得模式，打开即写
 - `SV / IR / WYSIWYG` 三模式一键切换，兼顾结构化与可视化
@@ -39,28 +39,28 @@ md-beader 不是“在线文档工具”的桌面壳，而是一套针对本地 
 | 文件操作 | 新建、打开、保存、另存为 |
 | 快捷键 | `Ctrl+N/O/S/Shift+S` |
 | 离线能力 | 编辑引擎、样式、语言包均内嵌到可执行文件 |
-| 命令行启动 | 支持 `md-beader.exe <file.md>` 直接打开文件 |
+| 命令行启动 | 支持 `md-bider.exe <file.md>` 直接打开文件 |
 
 ## 下载与发布
 
-- 最新稳定版：<https://github.com/cloveric/md-beader/releases/latest>
-- Windows 用户可直接下载发布页中的 `md-beader-vX.Y.Z-windows-x64.zip`
-- 解压后运行 `md-beader.exe`
+- 最新稳定版：<https://github.com/cloveric/md-bider/releases/latest>
+- Windows 用户可直接下载发布页中的 `md-bider-vX.Y.Z-windows-x64.zip`
+- 解压后运行 `md-bider.exe`
 
 ## 快速开始
 
 ### 1. 运行发布版
 
 ```powershell
-cd C:\Users\hangw\md-beader
+cd C:\Users\hangw\md-bider
 cargo build --release
-.\target\release\md-beader.exe
+.\target\release\md-bider.exe
 ```
 
 ### 2. 带文件启动
 
 ```powershell
-.\target\release\md-beader.exe C:\path\to\README.md
+.\target\release\md-bider.exe C:\path\to\README.md
 ```
 
 ## 键盘快捷键
@@ -96,7 +96,7 @@ Embedded Editor Shell (HTML/CSS/JS)
 ## 开发与测试
 
 ```powershell
-cd C:\Users\hangw\md-beader
+cd C:\Users\hangw\md-bider
 cargo test
 cargo build --release
 ```

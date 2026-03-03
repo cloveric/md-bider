@@ -1,4 +1,4 @@
-# md-beader v0.1.0
+# md-bider v0.1.0
 
 首个公开版本，聚焦“本地离线、中文友好、开箱可用”的 Markdown 编辑体验。
 
@@ -19,7 +19,7 @@
 
 ## Download
 
-- `md-beader-v0.1.0-windows-x64.zip`
+- `md-bider-v0.1.0-windows-x64.zip`
 
-解压后运行 `md-beader.exe`。
+解压后运行 `md-bider.exe`。
 

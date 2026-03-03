@@ -28,5 +28,5 @@ jobs:
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: markdown-studio-windows-x64
-          path: target/release/markdown_reader.exe
+          name: md-bider-windows-x64
+          path: target/release/md-bider.exe
