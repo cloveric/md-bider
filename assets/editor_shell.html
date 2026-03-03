@@ -15,8 +15,11 @@
       --primary: #3264c8;
       --primary-hover: #274f9f;
       --danger: #b73434;
-      --tab-bg: #f3f7fd;
-      --tab-hover: #e6eefc;
+      --tab-strip-bg: #edf1f7;
+      --tab-bg: #e9eef7;
+      --tab-border: #c8d1e1;
+      --tab-hover: #f1f5fc;
+      --tab-active: #ffffff;
     }
     * {
       box-sizing: border-box;
@@ -94,10 +97,10 @@
     .tabs {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 10px;
+      gap: 4px;
+      padding: 6px 10px 0;
       border-bottom: 1px solid var(--toolbar-border);
-      background: #eef4fc;
+      background: var(--tab-strip-bg);
       overflow-x: auto;
       white-space: nowrap;
     }
@@ -108,24 +111,30 @@
     .tab {
       display: inline-flex;
       align-items: center;
+      height: 31px;
       max-width: 260px;
       background: var(--tab-bg);
-      border: 1px solid #cfdaeb;
-      border-radius: 10px;
-      padding: 5px 8px;
+      border: 1px solid var(--tab-border);
+      border-bottom: 1px solid var(--toolbar-border);
+      border-top-left-radius: 9px;
+      border-top-right-radius: 9px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding: 5px 10px;
       cursor: pointer;
       color: #2a3850;
       user-select: none;
-      transition: background 0.12s ease;
+      transition: background 0.12s ease, border-color 0.12s ease;
     }
     .tab:hover {
       background: var(--tab-hover);
     }
     .tab.active {
-      background: #ffffff;
-      border-color: var(--primary);
+      background: var(--tab-active);
+      border-color: var(--toolbar-border);
+      border-bottom-color: var(--tab-active);
       color: var(--primary);
-      box-shadow: 0 4px 10px rgba(60, 92, 148, 0.15);
+      margin-bottom: -1px;
     }
     .tab-title {
       overflow: hidden;
@@ -134,21 +143,21 @@
       font-size: 12px;
     }
     .tab-close {
-      margin-left: 8px;
+      margin-left: 6px;
       border: 0;
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      line-height: 16px;
+      border-radius: 4px;
+      width: 16px;
+      height: 16px;
+      line-height: 14px;
       background: transparent;
       color: #6a788c;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       padding: 0;
     }
     .tab-close:hover {
-      background: #dfe8f8;
-      color: #2a3e62;
+      background: #dbe3f3;
+      color: #243246;
     }
     .editor-wrap {
       padding: 10px;
@@ -192,10 +201,10 @@
     let engineError = "";
     let suppressEditorInput = false;
     let tabSeq = 0;
-    let untitledSeq = 0;
     let activeTabId = "";
 
     const tabs = [];
+    const untitledIndexPool = new Set();
     const statusEl = document.getElementById("status");
     const pathEl = document.getElementById("filePath");
     const tabsEl = document.getElementById("tabs");
@@ -211,6 +220,7 @@
     const ENGINE_CSS_B64 = window.__ENGINE_CSS_B64__ || "";
     const ENGINE_ICON_B64 = window.__ENGINE_ICON_B64__ || "";
     const ENGINE_I18N_B64 = window.__ENGINE_I18N_B64__ || "";
+    const UNTITLED_PREFIX = "未命名 ";
 
     function hostSend(message) {
       if (window.ipc && typeof window.ipc.postMessage === "function") {
@@ -315,9 +325,54 @@
       }
     }
 
-    function nextUntitledTitle() {
-      untitledSeq += 1;
-      return `未命名 ${untitledSeq}`;
+    function parseUntitledIndex(title) {
+      const match = new RegExp(`^${UNTITLED_PREFIX}(\\d+)$`).exec(String(title || "").trim());
+      return match ? Number(match[1]) : null;
+    }
+
+    function acquireUntitledIndex(preferred = null) {
+      if (Number.isInteger(preferred) && preferred > 0 && !untitledIndexPool.has(preferred)) {
+        untitledIndexPool.add(preferred);
+        return preferred;
+      }
+
+      let index = 1;
+      while (untitledIndexPool.has(index)) {
+        index += 1;
+      }
+      untitledIndexPool.add(index);
+      return index;
+    }
+
+    function releaseUntitledIndex(index) {
+      if (Number.isInteger(index) && index > 0) {
+        untitledIndexPool.delete(index);
+      }
+    }
+
+    function ensureUntitledTitle(tab, preferredTitle = "") {
+      if (Number.isInteger(tab.untitledIndex) && tab.untitledIndex > 0) {
+        untitledIndexPool.add(tab.untitledIndex);
+        tab.title = `${UNTITLED_PREFIX}${tab.untitledIndex}`;
+        return;
+      }
+
+      const preferredIndex = parseUntitledIndex(preferredTitle) ?? parseUntitledIndex(tab.title);
+      const index = acquireUntitledIndex(preferredIndex);
+      tab.untitledIndex = index;
+      tab.title = `${UNTITLED_PREFIX}${index}`;
+    }
+
+    function applyTabPath(tab, path, preferredTitle = "") {
+      tab.path = path || "";
+      const fileName = basename(tab.path);
+      if (fileName) {
+        releaseUntitledIndex(tab.untitledIndex);
+        tab.untitledIndex = null;
+        tab.title = fileName;
+        return;
+      }
+      ensureUntitledTitle(tab, preferredTitle);
     }
 
     function getActiveTab() {
@@ -394,14 +449,15 @@
 
     function addTab({ id, path = "", content = "", title = "", activate = true }) {
       syncTabSeqFromId(id);
-      const inferredTitle = basename(path) || title || nextUntitledTitle();
       const tab = {
         id,
-        path,
-        title: inferredTitle,
+        path: "",
+        title: "",
         content,
         dirty: false,
+        untitledIndex: null,
       };
+      applyTabPath(tab, path, title);
       tabs.push(tab);
       if (activate) {
         activeTabId = id;
@@ -420,7 +476,7 @@
       if (tabs.length > 0) {
         return;
       }
-      const tab = addTab({ id: nextTabId(), content: "", title: nextUntitledTitle(), activate: true });
+      const tab = addTab({ id: nextTabId(), content: "", activate: true });
       setPath(tab.path);
     }
 
@@ -446,15 +502,18 @@
           return;
         }
       }
+      releaseUntitledIndex(tab.untitledIndex);
 
       if (tabs.length === 1) {
         tabs[0] = {
           id: nextTabId(),
           path: "",
-          title: nextUntitledTitle(),
+          title: "",
           content: "",
           dirty: false,
+          untitledIndex: null,
         };
+        ensureUntitledTitle(tabs[0], tab.title);
         activeTabId = tabs[0].id;
         renderTabs();
         setPath("");
@@ -480,20 +539,21 @@
     function upsertOpenedTab(tabId, path, content) {
       syncTabSeqFromId(tabId);
       const found = tabs.find((tab) => tab.id === tabId);
-      const title = basename(path) || found?.title || nextUntitledTitle();
       if (found) {
-        found.path = path || "";
         found.content = content || "";
-        found.title = title;
+        applyTabPath(found, path || "", found.title);
         found.dirty = false;
       } else {
-        tabs.push({
+        const tab = {
           id: tabId,
-          path: path || "",
+          path: "",
           content: content || "",
-          title,
+          title: "",
           dirty: false,
-        });
+          untitledIndex: null,
+        };
+        applyTabPath(tab, path || "", "");
+        tabs.push(tab);
       }
       activeTabId = tabId;
       renderTabs();
@@ -629,8 +689,7 @@
         if (message.event === "file_saved") {
           const target = tabs.find((tab) => tab.id === message.tab_id);
           if (target) {
-            target.path = message.path || target.path;
-            target.title = basename(target.path) || target.title;
+            applyTabPath(target, message.path || target.path, target.title);
             target.dirty = false;
           }
           if (message.tab_id === activeTabId) {
@@ -652,7 +711,7 @@
 
     document.getElementById("newBtn").addEventListener("click", () => {
       persistActiveTabContent();
-      const tab = addTab({ id: nextTabId(), content: "", title: nextUntitledTitle(), activate: true });
+      const tab = addTab({ id: nextTabId(), content: "", activate: true });
       setEditorContent(tab.content);
       setStatus("新建标签");
     });
