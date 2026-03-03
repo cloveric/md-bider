@@ -264,9 +264,9 @@
         <button id="saveBtn" class="btn primary">保存</button>
         <button id="saveAsBtn" class="btn">另存为</button>
         <div class="mode-group">
-          <button id="svBtn" class="btn mode">分栏 SV</button>
-          <button id="irBtn" class="btn mode">所见即所得 IR</button>
-          <button id="wysiwygBtn" class="btn mode">富文本 WYSIWYG</button>
+          <button id="svBtn" class="btn mode">分屏预览 SV</button>
+          <button id="irBtn" class="btn mode">即时渲染 IR</button>
+          <button id="wysiwygBtn" class="btn mode">所见即所得 WYSIWYG</button>
         </div>
         <label class="lang-wrap" for="langSelect">
           <span id="langLabel" class="lang-label">语言</span>
@@ -308,9 +308,9 @@
       ir: document.getElementById("irBtn"),
       wysiwyg: document.getElementById("wysiwygBtn"),
     };
-    const ENGINE_GLOBAL = String.fromCharCode(86, 100, 105, 116, 111, 114);
-    const ENGINE_I18N_GLOBAL = String.fromCharCode(86, 100, 105, 116, 111, 114, 73, 49, 56, 110);
-    const ENGINE_ICON_GLOBAL = String.fromCharCode(86, 100, 105, 116, 111, 114, 83, 118, 103, 115);
+    const ENGINE_GLOBAL = String.fromCharCode(77, 100, 66, 105, 100, 101, 114);
+    const ENGINE_I18N_GLOBAL = String.fromCharCode(77, 100, 66, 105, 100, 101, 114, 73, 49, 56, 110);
+    const ENGINE_ICON_GLOBAL = String.fromCharCode(77, 100, 66, 105, 100, 101, 114, 83, 118, 103, 115);
     const ENGINE_JS_B64 = window.__ENGINE_JS_B64__ || "";
     const ENGINE_CSS_B64 = window.__ENGINE_CSS_B64__ || "";
     const ENGINE_ICON_B64 = window.__ENGINE_ICON_B64__ || "";
@@ -329,9 +329,9 @@
         open: "打开",
         save: "保存",
         saveAs: "另存为",
-        modeSv: "分栏 SV",
-        modeIr: "所见即所得 IR",
-        modeWysiwyg: "富文本 WYSIWYG",
+        modeSv: "分屏预览 SV",
+        modeIr: "即时渲染 IR",
+        modeWysiwyg: "所见即所得 WYSIWYG",
         pathNotOpened: "未打开文件",
         closeTab: "关闭标签",
         closeUnsavedConfirm: "标签“{title}”尚未保存，确定关闭吗？",
@@ -359,9 +359,9 @@
         open: "Open",
         save: "Save",
         saveAs: "Save As",
-        modeSv: "Split SV",
-        modeIr: "Instant IR",
-        modeWysiwyg: "Rich Text WYSIWYG",
+        modeSv: "Split Preview SV",
+        modeIr: "Instant Render IR",
+        modeWysiwyg: "WYSIWYG",
         pathNotOpened: "No file opened",
         closeTab: "Close tab",
         closeUnsavedConfirm: "Tab \"{title}\" has unsaved changes. Close anyway?",

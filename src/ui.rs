@@ -32,7 +32,7 @@ impl WorkspaceMode {
         match self {
             Self::Read => "阅读",
             Self::Edit => "编辑",
-            Self::Split => "分栏",
+            Self::Split => "分屏预览",
         }
     }
 }
