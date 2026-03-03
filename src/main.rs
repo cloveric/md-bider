@@ -1,7 +1,9 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+
+use base64::Engine as _;
 
 use md_bider::desktop::{HostEvent, IpcCommand, to_webview_script};
 use md_bider::io::{read_text_with_fallback, write_text_utf8};
@@ -81,6 +83,85 @@ fn normalize_path(path: Option<String>) -> Option<PathBuf> {
 fn default_name_from_path(path: Option<&PathBuf>) -> &str {
     path.and_then(|p| p.file_name().and_then(|name| name.to_str()))
         .unwrap_or("untitled.md")
+}
+
+fn unique_file_path(dir: &Path, name: &str) -> PathBuf {
+    let base = Path::new(name);
+    let stem = base
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("image");
+    let ext = base.extension().and_then(|e| e.to_str()).unwrap_or("png");
+
+    let candidate = dir.join(name);
+    if !candidate.exists() {
+        return candidate;
+    }
+
+    let mut counter: u32 = 1;
+    loop {
+        let numbered = dir.join(format!("{stem}_{counter}.{ext}"));
+        if !numbered.exists() {
+            return numbered;
+        }
+        counter += 1;
+    }
+}
+
+fn upload_image(webview: &WebView, tab_id: String, name: &str, data: &str, dir: Option<String>) {
+    let bytes = match base64::engine::general_purpose::STANDARD.decode(data) {
+        Ok(b) => b,
+        Err(err) => {
+            send_event(
+                webview,
+                HostEvent::Error {
+                    message: format!("图片解码失败: {err}"),
+                },
+            );
+            return;
+        }
+    };
+
+    let assets_dir = match dir.as_deref().filter(|d| !d.trim().is_empty()) {
+        Some(d) => PathBuf::from(d).join("assets"),
+        None => std::env::temp_dir().join("md-bider-uploads").join("assets"),
+    };
+
+    if let Err(err) = std::fs::create_dir_all(&assets_dir) {
+        send_event(
+            webview,
+            HostEvent::Error {
+                message: format!("创建目录失败: {err}"),
+            },
+        );
+        return;
+    }
+
+    let dest = unique_file_path(&assets_dir, name);
+    if let Err(err) = std::fs::write(&dest, &bytes) {
+        send_event(
+            webview,
+            HostEvent::Error {
+                message: format!("图片保存失败: {err}"),
+            },
+        );
+        return;
+    }
+
+    let relative_url = format!(
+        "assets/{}",
+        dest.file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or(name)
+    );
+
+    send_event(
+        webview,
+        HostEvent::ImageUploaded {
+            tab_id,
+            url: relative_url,
+        },
+    );
 }
 
 fn open_file_into_editor(webview: &WebView, tab_id: String, path: PathBuf) {
@@ -229,6 +310,15 @@ fn main() -> wry::Result<()> {
                     if let Some(path) = file {
                         save_content_to_path(&webview, target_tab_id, path, &content);
                     }
+                }
+                Ok(IpcCommand::UploadImage {
+                    tab_id,
+                    name,
+                    data,
+                    dir,
+                }) => {
+                    let target_tab_id = tab_id.unwrap_or_else(|| next_tab_id(&mut tab_seq));
+                    upload_image(&webview, target_tab_id, &name, &data, dir);
                 }
                 Err(err) => {
                     send_event(

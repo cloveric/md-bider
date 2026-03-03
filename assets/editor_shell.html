@@ -24,6 +24,39 @@
       --btn-border: #bcc6d8;
       --btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
     }
+    html.dark-theme {
+      --bg: #1a1b2e;
+      --toolbar-bg: linear-gradient(180deg, #252640 0%, #1e1f34 100%);
+      --toolbar-border: #3a3b55;
+      --surface: #24253a;
+      --text: #c8cad8;
+      --muted: #7a7d95;
+      --primary: #6b8cef;
+      --primary-hover: #8ba4f5;
+      --danger: #e06070;
+      --tab-strip-bg: #1e1f34;
+      --tab-bg: #252640;
+      --tab-border: #3a3b55;
+      --tab-hover: #2e2f4a;
+      --tab-active: #24253a;
+      --btn-bg: #2a2b44;
+      --btn-border: #3a3b55;
+      --btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+    }
+    html.dark-theme .btn { color: #c0c4d8; }
+    html.dark-theme .btn:hover { background: #33345a; border-color: #4a4b6a; }
+    html.dark-theme .btn.primary { color: #fff; }
+    html.dark-theme .btn.mode.active { background: #33345a; color: #8ba4f5; border-color: #4a4b6a; }
+    html.dark-theme .btn.mode:hover { background: #2e2f4a; }
+    html.dark-theme .mode-group { background: #1e1f34; border-color: #3a3b55; box-shadow: none; }
+    html.dark-theme .path { color: #8a8da5; background: rgba(0,0,0,0.2); border-color: #3a3b55; }
+    html.dark-theme .tab { color: #9a9db5; }
+    html.dark-theme .tab.active { color: #8ba4f5; }
+    html.dark-theme .tab-close:hover { background: #3a3b55; color: #c8cad8; }
+    html.dark-theme .lang-wrap { background: rgba(0,0,0,0.2); border-color: #3a3b55; }
+    html.dark-theme .lang-label { color: #8a8da5; }
+    html.dark-theme .lang-select { background: #2a2b44; color: #c0c4d8; border-color: #3a3b55; }
+    html.dark-theme #editorRoot { box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
     * {
       box-sizing: border-box;
     }
@@ -314,6 +347,9 @@
             <option value="en">English</option>
           </select>
         </label>
+        <button id="themeBtn" class="btn" style="min-width:auto;padding:0 10px;font-size:15px;">
+          <span id="themeIcon">&#9789;</span>
+        </button>
       </div>
       <div class="toolbar-right">
         <span id="filePath" class="path">未打开文件</span>
@@ -400,6 +436,12 @@
         previewTablet: "平板视图",
         previewMobile: "手机视图",
         previewWechat: "复制到微信公众号",
+        themeDark: "深色模式",
+        themeLight: "浅色模式",
+        statusThemeDark: "已切换到深色主题",
+        statusThemeLight: "已切换到浅色主题",
+        statusImageUploaded: "图片已上传",
+        statusUploadFailed: "上传失败",
       },
       en: {
         language: "Language",
@@ -441,6 +483,12 @@
         previewTablet: "Tablet view",
         previewMobile: "Mobile view",
         previewWechat: "Copy for WeChat",
+        themeDark: "Dark mode",
+        themeLight: "Light mode",
+        statusThemeDark: "Switched to dark theme",
+        statusThemeLight: "Switched to light theme",
+        statusImageUploaded: "Image uploaded",
+        statusUploadFailed: "Upload failed",
       },
     };
 
@@ -888,6 +936,59 @@
       }
     }
 
+    let isDarkTheme = false;
+    const THEME_KEY = "md-bider.theme";
+
+    function readStoredTheme() {
+      try { return window.localStorage.getItem(THEME_KEY) || ""; } catch(_) { return ""; }
+    }
+
+    function saveStoredTheme(theme) {
+      try { window.localStorage.setItem(THEME_KEY, theme); } catch(_) {}
+    }
+
+    function applyTheme(dark, { announce = true, recreate = true } = {}) {
+      isDarkTheme = dark;
+      document.documentElement.classList.toggle("dark-theme", dark);
+      const iconEl = document.getElementById("themeIcon");
+      if (iconEl) iconEl.innerHTML = dark ? "&#9788;" : "&#9789;";
+      const themeBtn = document.getElementById("themeBtn");
+      if (themeBtn) themeBtn.title = dark ? t("themeLight") : t("themeDark");
+      saveStoredTheme(dark ? "dark" : "light");
+      if (recreate && editor) {
+        persistActiveTabContent();
+        createEditor(getActiveTab()?.content || "");
+      }
+      if (announce) setStatus(dark ? t("statusThemeDark") : t("statusThemeLight"));
+    }
+
+    function getActiveTabDir() {
+      const active = getActiveTab();
+      if (!active || !active.path) return null;
+      const normalized = String(active.path).replaceAll("\\", "/");
+      const lastSlash = normalized.lastIndexOf("/");
+      return lastSlash > 0 ? active.path.substring(0, lastSlash) : null;
+    }
+
+    function handleImageUpload(files) {
+      if (!files || files.length === 0) return null;
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(",")[1] || "";
+          hostSend({
+            cmd: "upload_image",
+            tab_id: activeTabId,
+            name: file.name,
+            data: base64,
+            dir: getActiveTabDir(),
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+      return null;
+    }
+
     const PREVIEW_ICONS = {
       desktop: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
       tablet: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
@@ -942,11 +1043,19 @@
       container.innerHTML = "";
       const editorLang = appLocale === "en" ? "en_US" : "zh_CN";
       const editorI18n = appLocale === "en" ? undefined : window[ENGINE_I18N_GLOBAL];
+      const editorTheme = isDarkTheme ? "dark" : "classic";
+      const contentTheme = isDarkTheme ? "dark" : "light";
       const baseOptions = {
         mode: currentMode,
         height: "100%",
         value,
         icon: "",
+        theme: editorTheme,
+        typewriterMode: true,
+        outline: {
+          enable: true,
+          position: "left",
+        },
         toolbar: [
           "emoji",
           "headings",
@@ -959,18 +1068,26 @@
           "list",
           "ordered-list",
           "check",
+          "outdent",
+          "indent",
           "|",
           "code",
           "inline-code",
           "link",
           "table",
+          "upload",
           "|",
           "undo",
           "redo",
           "|",
+          "outline",
+          "code-theme",
+          "content-theme",
+          "|",
           "edit-mode",
           "both",
           "preview",
+          "export",
           "fullscreen"
         ],
         toolbarConfig: {
@@ -984,9 +1101,36 @@
         cache: {
           enable: false,
         },
+        comment: {
+          enable: true,
+        },
+        upload: {
+          handler: handleImageUpload,
+        },
         preview: {
           markdown: {
             toc: true,
+            autoSpace: true,
+            fixTermTypo: true,
+            paragraphBeginningSpace: true,
+            footnotes: true,
+            mark: true,
+          },
+          math: {
+            engine: "KaTeX",
+            inlineDigit: true,
+          },
+          hljs: {
+            lineNumber: true,
+          },
+          theme: {
+            current: contentTheme,
+            list: {
+              "ant-design": "Ant Design",
+              light: "Light",
+              dark: "Dark",
+              wechat: "WeChat",
+            },
           },
         },
         input() {
@@ -1105,6 +1249,15 @@
           setStatus(t("statusSaved"));
           return;
         }
+        if (message.event === "image_uploaded") {
+          if (editor && message.url) {
+            const name = message.name || "image";
+            editor.insertValue(`![${name}](${message.url})\n`);
+            markActiveTabDirty();
+            setStatus(t("statusImageUploaded"));
+          }
+          return;
+        }
         if (message.event === "status") {
           const localized = translateHostMessage(message.message || "");
           setStatus(localized);
@@ -1140,6 +1293,9 @@
       const next = event?.target?.value || "zh-CN";
       setLocale(next, { announce: true, recreateEditor: true });
     });
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      applyTheme(!isDarkTheme);
+    });
 
     window.addEventListener("keydown", (event) => {
       const hotkey = event.ctrlKey || event.metaKey;
@@ -1166,6 +1322,9 @@
     });
 
     applyUiLanguage();
+    const storedTheme = readStoredTheme();
+    if (storedTheme === "dark") applyTheme(true, { announce: false, recreate: false });
+    else applyTheme(false, { announce: false, recreate: false });
     setStatus(t("statusPreparing"));
     ensureOneTab();
     updateModeButtons();
