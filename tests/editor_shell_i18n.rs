@@ -41,14 +41,18 @@ fn defaults_to_english_without_saved_locale() {
 }
 
 #[test]
-fn does_not_force_preview_container_visible_outside_split_mode() {
+fn only_forces_preview_container_visible_in_split_mode() {
     let html = shell_html();
     assert!(
         !html.contains("display: flex !important;"),
         "expected no CSS override that forces the preview container visible"
     );
     assert!(
-        !html.contains("previewEl.style.display = 'flex';"),
-        "expected no JS override that forces the preview container visible"
+        html.contains("if (currentMode !== \"sv\")"),
+        "expected a split-mode guard before preview visibility overrides"
+    );
+    assert!(
+        html.contains("previewEl.style.display = 'flex';"),
+        "expected the preview container to be forced into flex layout in split mode"
     );
 }

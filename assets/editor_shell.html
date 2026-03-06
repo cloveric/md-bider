@@ -962,10 +962,14 @@
       const actionBar = document.querySelector('.mdbider-preview__action');
       if (!actionBar || actionBar.dataset.patched) return;
 
-      // Preserve the engine's mode-specific visibility rules.
-      // In SV mode the preview container is already flex; in IR/WYSIWYG it may be hidden.
+      if (currentMode !== "sv") {
+        return;
+      }
+
+      // Only force the side-by-side preview layout in SV mode.
       const previewEl = actionBar.closest('.mdbider-preview');
       if (previewEl) {
+        previewEl.style.display = 'flex';
         previewEl.style.flexDirection = 'row';
       }
 

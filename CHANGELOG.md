@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4] - 2026-03-06
+
+### Fixed
+
+- Restore the four split-preview buttons to a real right-side sidebar in `SV` mode.
+- Keep the preview container visibility override guarded to `SV` only, so `IR` and `WYSIWYG` still avoid unintended split panes.
+- Tightened the regression test to require the split-mode guard around preview layout forcing.
+
 ## [0.4.3] - 2026-03-06
 
 ### Fixed
