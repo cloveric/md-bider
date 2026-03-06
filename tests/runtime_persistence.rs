@@ -35,3 +35,17 @@ fn serves_editor_shell_from_custom_protocol_url() {
         "expected main.rs not to use with_html because that gives the page a null origin"
     );
 }
+
+#[test]
+fn initialization_script_exposes_current_app_version() {
+    let script = md_bider::app_init::build_initialization_script();
+
+    assert!(
+        script.contains("window.__APP_VERSION__"),
+        "expected initialization script to expose an app version global"
+    );
+    assert!(
+        script.contains(env!("CARGO_PKG_VERSION")),
+        "expected initialization script to include the current Cargo package version"
+    );
+}

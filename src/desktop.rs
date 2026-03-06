@@ -147,10 +147,8 @@ mod tests {
 
     #[test]
     fn parses_upload_image_without_optional_fields() {
-        let cmd = IpcCommand::parse(
-            r##"{"cmd":"upload_image","name":"photo.jpg","data":"AAAA"}"##,
-        )
-        .expect("parse upload_image without optional fields");
+        let cmd = IpcCommand::parse(r##"{"cmd":"upload_image","name":"photo.jpg","data":"AAAA"}"##)
+            .expect("parse upload_image without optional fields");
         assert_eq!(
             cmd,
             IpcCommand::UploadImage {

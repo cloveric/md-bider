@@ -180,6 +180,25 @@
     .status.error {
       color: var(--danger);
     }
+    .version-badge {
+      color: #3d4f6b;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 0 10px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid #d3dbe9;
+      white-space: nowrap;
+    }
+    html.dark-theme .version-badge {
+      color: #d4daf0;
+      background: rgba(0,0,0,0.24);
+      border-color: #3a3b55;
+    }
     .lang-wrap {
       display: inline-flex;
       align-items: center;
@@ -317,6 +336,7 @@
       <div class="toolbar-right">
         <span id="filePath" class="path">未打开文件</span>
         <span id="status" class="status">准备中...</span>
+        <span id="appVersion" class="version-badge">vdev</span>
       </div>
     </div>
     <div id="tabs" class="tabs"></div>
@@ -338,6 +358,7 @@
     const untitledIndexPool = new Set();
     const statusEl = document.getElementById("status");
     const pathEl = document.getElementById("filePath");
+    const versionEl = document.getElementById("appVersion");
     const tabsEl = document.getElementById("tabs");
     const langLabelEl = document.getElementById("langLabel");
     const langSelectEl = document.getElementById("langSelect");
@@ -353,6 +374,7 @@
     const ENGINE_CSS_B64 = window.__ENGINE_CSS_B64__ || "";
     const ENGINE_ICON_B64 = window.__ENGINE_ICON_B64__ || "";
     const ENGINE_I18N_B64 = window.__ENGINE_I18N_B64__ || "";
+    const APP_VERSION = window.__APP_VERSION__ || "dev";
     const APP_LOCALE_KEY = "md-bider.locale";
     const UNTITLED_PREFIX_BY_LOCALE = {
       "zh-CN": "未命名 ",
@@ -508,6 +530,11 @@
     function setPath(path) {
       pathEl.textContent = path || t("pathNotOpened");
       pathEl.title = pathEl.textContent;
+    }
+
+    function setVersionLabel() {
+      versionEl.textContent = `v${APP_VERSION}`;
+      versionEl.title = `md-bider v${APP_VERSION}`;
     }
 
     function refreshUntitledTabTitles() {
@@ -1340,6 +1367,7 @@
     });
 
     applyUiLanguage();
+    setVersionLabel();
     const storedTheme = readStoredTheme();
     if (storedTheme === "dark") applyTheme(true, { announce: false, recreate: false });
     else applyTheme(false, { announce: false, recreate: false });

@@ -1,10 +1,10 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 
 use base64::Engine as _;
 
+use md_bider::app_init::build_initialization_script;
 use md_bider::desktop::{HostEvent, IpcCommand, to_webview_script};
 use md_bider::io::{read_text_with_fallback, write_text_utf8};
 use md_bider::runtime_paths::webview_data_directory;
@@ -22,39 +22,9 @@ enum UserEvent {
 }
 
 const INDEX_HTML_TEMPLATE: &str = include_str!("../assets/editor_shell.html");
-const ENGINE_JS_B64: &str = include_str!("../assets/vendor/engine.js.b64");
-const ENGINE_CSS_B64: &str = include_str!("../assets/vendor/engine.css.b64");
-const ENGINE_ICON_B64: &str = include_str!("../assets/vendor/icon_ant.js.b64");
-const I18N_ZH_CN_B64: &str = include_str!("../assets/vendor/i18n_zh_cn.js.b64");
 const APP_ICON_PNG: &[u8] = include_bytes!("../assets/app_icon.png");
 const APP_CUSTOM_PROTOCOL: &str = "md-bider";
 const APP_INDEX_URL: &str = "md-bider://localhost/index.html";
-
-static INIT_SCRIPT: OnceLock<String> = OnceLock::new();
-
-fn certutil_base64_body(data: &str) -> String {
-    data.lines()
-        .filter(|line| !line.starts_with("-----"))
-        .collect::<String>()
-}
-
-fn initialization_script() -> &'static str {
-    INIT_SCRIPT
-        .get_or_init(|| {
-            let js_b64 = certutil_base64_body(ENGINE_JS_B64);
-            let css_b64 = certutil_base64_body(ENGINE_CSS_B64);
-            let icon_b64 = certutil_base64_body(ENGINE_ICON_B64);
-            let i18n_b64 = certutil_base64_body(I18N_ZH_CN_B64);
-            format!(
-                "window.__ENGINE_JS_B64__ = {}; window.__ENGINE_CSS_B64__ = {}; window.__ENGINE_ICON_B64__ = {}; window.__ENGINE_I18N_B64__ = {};",
-                serde_json::to_string(&js_b64).unwrap_or_else(|_| "\"\"".to_owned()),
-                serde_json::to_string(&css_b64).unwrap_or_else(|_| "\"\"".to_owned()),
-                serde_json::to_string(&icon_b64).unwrap_or_else(|_| "\"\"".to_owned()),
-                serde_json::to_string(&i18n_b64).unwrap_or_else(|_| "\"\"".to_owned())
-            )
-        })
-        .as_str()
-}
 
 fn send_event(webview: &WebView, event: HostEvent) {
     if let Ok(script) = to_webview_script(&event) {
@@ -112,10 +82,7 @@ fn default_name_from_path(path: Option<&PathBuf>) -> &str {
 
 fn unique_file_path(dir: &Path, name: &str) -> PathBuf {
     let base = Path::new(name);
-    let stem = base
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("image");
+    let stem = base.file_stem().and_then(|s| s.to_str()).unwrap_or("image");
     let ext = base.extension().and_then(|e| e.to_str()).unwrap_or("png");
 
     let candidate = dir.join(name);
@@ -175,9 +142,7 @@ fn upload_image(webview: &WebView, tab_id: String, name: &str, data: &str, dir: 
 
     let relative_url = format!(
         "assets/{}",
-        dest.file_name()
-            .and_then(|f| f.to_str())
-            .unwrap_or(name)
+        dest.file_name().and_then(|f| f.to_str()).unwrap_or(name)
     );
 
     send_event(
@@ -253,7 +218,7 @@ fn main() -> wry::Result<()> {
         .with_custom_protocol(APP_CUSTOM_PROTOCOL.into(), move |_webview_id, request| {
             app_protocol_response(request.uri().path()).map(Into::into)
         })
-        .with_initialization_script(initialization_script())
+        .with_initialization_script(build_initialization_script())
         .with_url(APP_INDEX_URL)
         .with_ipc_handler(move |request| {
             let _ = proxy.send_event(UserEvent::Ipc(request.body().to_owned()));

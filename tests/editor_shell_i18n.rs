@@ -56,3 +56,16 @@ fn only_forces_preview_container_visible_in_split_mode() {
         "expected the preview container to be forced into flex layout in split mode"
     );
 }
+
+#[test]
+fn toolbar_contains_version_badge() {
+    let html = shell_html();
+    assert!(
+        html.contains("id=\"appVersion\""),
+        "expected a toolbar element with id=appVersion"
+    );
+    assert!(
+        html.contains("class=\"version-badge\""),
+        "expected a dedicated version badge class in the editor shell"
+    );
+}
