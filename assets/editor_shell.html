@@ -422,12 +422,33 @@
         previewTablet: "平板视图",
         previewMobile: "手机视图",
         previewWechat: "复制到微信公众号",
+        tooltipToolbarEmoji: "插入表情",
+        tooltipToolbarHeadings: "设置标题级别",
+        tooltipToolbarBold: "加粗",
+        tooltipToolbarItalic: "斜体",
+        tooltipToolbarStrike: "删除线",
+        tooltipToolbarLine: "插入分隔线",
+        tooltipToolbarQuote: "引用",
+        tooltipToolbarList: "无序列表",
+        tooltipToolbarOrderedList: "有序列表",
+        tooltipToolbarCheck: "任务列表",
+        tooltipToolbarInlineCode: "行内代码",
+        tooltipToolbarLink: "链接",
+        tooltipToolbarTable: "表格",
+        tooltipToolbarUndo: "撤销",
+        tooltipToolbarRedo: "重做",
+        tooltipToolbarOutline: "显示/隐藏大纲",
+        tooltipToolbarCodeTheme: "代码主题预览",
+        tooltipToolbarExport: "导出",
+        tooltipToolbarBoth: "编辑和预览",
+        tooltipToolbarPreview: "预览",
+        tooltipToolbarFullscreen: "全屏",
+        tooltipToolbarMore: "更多工具",
         themeDark: "深色模式",
         themeLight: "浅色模式",
         statusThemeDark: "已切换到深色主题",
         statusThemeLight: "已切换到浅色主题",
-        statusImageUploaded: "图片已上传",
-        statusUploadFailed: "上传失败",
+        statusUploadDisabled: "图片粘贴和拖拽已关闭",
       },
       en: {
         language: "Language",
@@ -470,12 +491,33 @@
         previewTablet: "Tablet view",
         previewMobile: "Mobile view",
         previewWechat: "Copy for WeChat",
+        tooltipToolbarEmoji: "Insert emoji",
+        tooltipToolbarHeadings: "Set heading level",
+        tooltipToolbarBold: "Bold",
+        tooltipToolbarItalic: "Italic",
+        tooltipToolbarStrike: "Strikethrough",
+        tooltipToolbarLine: "Insert divider",
+        tooltipToolbarQuote: "Block quote",
+        tooltipToolbarList: "Bullet list",
+        tooltipToolbarOrderedList: "Numbered list",
+        tooltipToolbarCheck: "Task list",
+        tooltipToolbarInlineCode: "Inline code",
+        tooltipToolbarLink: "Link",
+        tooltipToolbarTable: "Table",
+        tooltipToolbarUndo: "Undo",
+        tooltipToolbarRedo: "Redo",
+        tooltipToolbarOutline: "Show or hide outline",
+        tooltipToolbarCodeTheme: "Code theme preview",
+        tooltipToolbarExport: "Export",
+        tooltipToolbarBoth: "Edit and preview",
+        tooltipToolbarPreview: "Preview",
+        tooltipToolbarFullscreen: "Fullscreen",
+        tooltipToolbarMore: "More tools",
         themeDark: "Dark mode",
         themeLight: "Light mode",
         statusThemeDark: "Switched to dark theme",
         statusThemeLight: "Switched to light theme",
-        statusImageUploaded: "Image uploaded",
-        statusUploadFailed: "Upload failed",
+        statusUploadDisabled: "Image paste and drag-and-drop are disabled",
       },
     };
 
@@ -572,6 +614,7 @@
       renderTabs();
       const active = getActiveTab();
       setPath(active?.path || "");
+      annotateEditorToolbar();
     }
 
     function setLocale(locale, { announce = true, recreateEditor = true } = {}) {
@@ -959,31 +1002,9 @@
       if (announce) setStatus(dark ? t("statusThemeDark") : t("statusThemeLight"));
     }
 
-    function getActiveTabDir() {
-      const active = getActiveTab();
-      if (!active || !active.path) return null;
-      const normalized = String(active.path).replaceAll("\\", "/");
-      const lastSlash = normalized.lastIndexOf("/");
-      return lastSlash > 0 ? active.path.substring(0, lastSlash) : null;
-    }
-
-    function handleImageUpload(files) {
-      if (!files || files.length === 0) return null;
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result.split(",")[1] || "";
-          hostSend({
-            cmd: "upload_image",
-            tab_id: activeTabId,
-            name: file.name,
-            data: base64,
-            dir: getActiveTabDir(),
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-      return null;
+    function rejectImageUpload() {
+      setStatus(t("statusUploadDisabled"), true);
+      return t("statusUploadDisabled");
     }
 
     const PREVIEW_ICONS = {
@@ -1079,6 +1100,45 @@
       actionBar.dataset.patched = 'true';
     }
 
+    const EDITOR_TOOLBAR_TOOLTIP_KEYS = {
+      emoji: "tooltipToolbarEmoji",
+      headings: "tooltipToolbarHeadings",
+      bold: "tooltipToolbarBold",
+      italic: "tooltipToolbarItalic",
+      strike: "tooltipToolbarStrike",
+      line: "tooltipToolbarLine",
+      quote: "tooltipToolbarQuote",
+      list: "tooltipToolbarList",
+      "ordered-list": "tooltipToolbarOrderedList",
+      check: "tooltipToolbarCheck",
+      "inline-code": "tooltipToolbarInlineCode",
+      link: "tooltipToolbarLink",
+      table: "tooltipToolbarTable",
+      undo: "tooltipToolbarUndo",
+      redo: "tooltipToolbarRedo",
+      outline: "tooltipToolbarOutline",
+      "code-theme": "tooltipToolbarCodeTheme",
+      export: "tooltipToolbarExport",
+      both: "tooltipToolbarBoth",
+      preview: "tooltipToolbarPreview",
+      fullscreen: "tooltipToolbarFullscreen",
+      more: "tooltipToolbarMore",
+    };
+
+    function annotateEditorToolbar() {
+      document.querySelectorAll(".mdbider-toolbar [data-type]").forEach((el) => {
+        const type = el.getAttribute("data-type");
+        const key = EDITOR_TOOLBAR_TOOLTIP_KEYS[type];
+        const fallback = (el.getAttribute("aria-label") || el.textContent || "").trim();
+        const label = key ? t(key) : fallback;
+        if (!label) {
+          return;
+        }
+        el.setAttribute("aria-label", label);
+        el.setAttribute("title", label);
+      });
+    }
+
     function createEditor(value = "") {
       if (!ensureEngineLoaded()) {
         const reason = engineError || t("statusUnknownError");
@@ -1120,27 +1180,15 @@
           "list",
           "ordered-list",
           "check",
-          "outdent",
-          "indent",
           "|",
-          "code",
           "inline-code",
           "link",
           "table",
-          "upload",
           "|",
           "undo",
           "redo",
           "|",
-          "outline",
-          "code-theme",
-          "content-theme",
-          "|",
-          "edit-mode",
-          "both",
-          "preview",
-          "export",
-          "fullscreen"
+          { name: "more", toolbar: ["outline", "code-theme", "export", "both", "preview", "fullscreen"] }
         ],
         toolbarConfig: {
           pin: true,
@@ -1157,7 +1205,7 @@
           enable: true,
         },
         upload: {
-          handler: handleImageUpload,
+          handler: rejectImageUpload,
         },
         preview: {
           markdown: {
@@ -1196,6 +1244,8 @@
           updateModeButtons();
           patchPreviewActionBar();
           setTimeout(patchPreviewActionBar, 200);
+          annotateEditorToolbar();
+          setTimeout(annotateEditorToolbar, 200);
           if (!readySent) {
             hostSend({ cmd: "app_ready", tab_id: activeTabId || null });
             readySent = true;
@@ -1309,15 +1359,6 @@
           }
           renderTabs();
           setStatus(t("statusSaved"));
-          return;
-        }
-        if (message.event === "image_uploaded") {
-          if (editor && message.url) {
-            const name = message.name || "image";
-            editor.insertValue(`![${name}](${message.url})\n`);
-            markActiveTabDirty();
-            setStatus(t("statusImageUploaded"));
-          }
           return;
         }
         if (message.event === "status") {

@@ -29,14 +29,6 @@ pub enum IpcCommand {
         path: Option<String>,
         content: String,
     },
-    UploadImage {
-        #[serde(default)]
-        tab_id: Option<String>,
-        name: String,
-        data: String,
-        #[serde(default)]
-        dir: Option<String>,
-    },
     CloseConfirmed,
 }
 
@@ -57,10 +49,6 @@ pub enum HostEvent {
     FileSaved {
         tab_id: String,
         path: String,
-    },
-    ImageUploaded {
-        tab_id: String,
-        url: String,
     },
     Error {
         message: String,
@@ -126,38 +114,6 @@ mod tests {
                 tab_id: None,
                 path: None,
                 content: "legacy".to_owned(),
-            }
-        );
-    }
-
-    #[test]
-    fn parses_upload_image_command() {
-        let cmd = IpcCommand::parse(
-            r##"{"cmd":"upload_image","tab_id":"tab-3","name":"screenshot.png","data":"aGVsbG8=","dir":"C:\\docs"}"##,
-        )
-        .expect("parse upload_image command");
-        assert_eq!(
-            cmd,
-            IpcCommand::UploadImage {
-                tab_id: Some("tab-3".to_owned()),
-                name: "screenshot.png".to_owned(),
-                data: "aGVsbG8=".to_owned(),
-                dir: Some(r"C:\docs".to_owned()),
-            }
-        );
-    }
-
-    #[test]
-    fn parses_upload_image_without_optional_fields() {
-        let cmd = IpcCommand::parse(r##"{"cmd":"upload_image","name":"photo.jpg","data":"AAAA"}"##)
-            .expect("parse upload_image without optional fields");
-        assert_eq!(
-            cmd,
-            IpcCommand::UploadImage {
-                tab_id: None,
-                name: "photo.jpg".to_owned(),
-                data: "AAAA".to_owned(),
-                dir: None,
             }
         );
     }

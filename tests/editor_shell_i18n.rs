@@ -7,6 +7,15 @@ fn shell_html() -> String {
     fs::read_to_string(path).expect("read editor_shell.html")
 }
 
+fn editor_toolbar_config(html: &str) -> &str {
+    let start = html.find("toolbar: [").expect("find editor toolbar start");
+    let tail = &html[start..];
+    let end = tail
+        .find("toolbarConfig:")
+        .expect("find editor toolbar config end");
+    &tail[..end]
+}
+
 #[test]
 fn has_language_selector_control() {
     let html = shell_html();
@@ -94,6 +103,67 @@ fn app_shell_handles_redo_shortcuts_when_toolbar_redo_exists() {
         html.contains("key === \"z\" && event.shiftKey")
             && html.contains("runEditorHistoryCommand(\"redo\")"),
         "expected Ctrl/Cmd+Shift+Z to trigger editor redo"
+    );
+}
+
+#[test]
+fn editor_toolbar_has_tooltip_annotation_pass() {
+    let html = shell_html();
+    assert!(
+        html.contains("function annotateEditorToolbar()"),
+        "expected app shell to annotate editor toolbar buttons with titles"
+    );
+    assert!(
+        html.contains("setTimeout(annotateEditorToolbar, 200);"),
+        "expected app shell to retry tooltip annotation after editor renders async toolbar items"
+    );
+}
+
+#[test]
+fn desktop_toolbar_keeps_secondary_tools_under_more_menu() {
+    let html = shell_html();
+    assert!(
+        html.contains(
+            r#"{ name: "more", toolbar: ["outline", "code-theme", "export", "both", "preview", "fullscreen"] }"#
+        ),
+        "expected secondary editor actions to live under the More toolbar menu"
+    );
+    assert!(
+        !html.contains("\"content-theme\""),
+        "expected desktop app not to expose the inert content theme preview button"
+    );
+}
+
+#[test]
+fn desktop_toolbar_hides_unreliable_authoring_tools() {
+    let html = shell_html();
+    let toolbar = editor_toolbar_config(&html);
+    for tool in [r#""upload""#, r#""outdent""#, r#""indent""#, r#""code""#] {
+        assert!(
+            !toolbar.contains(tool),
+            "expected desktop toolbar not to expose unreliable authoring tool {tool}"
+        );
+    }
+    assert!(
+        toolbar.contains(r#""inline-code""#),
+        "expected inline code formatting to remain available"
+    );
+}
+
+#[test]
+fn app_shell_does_not_expose_upload_ipc() {
+    let html = shell_html();
+    assert!(
+        !html.contains("function handleImageUpload"),
+        "expected no renderer upload handler when upload UI is hidden"
+    );
+    assert!(
+        !html.contains("cmd: \"upload_image\""),
+        "expected renderer not to send upload_image IPC"
+    );
+    assert!(
+        !html.contains("statusImageUploaded"),
+        "expected no upload-only status strings in the app shell"
     );
 }
 

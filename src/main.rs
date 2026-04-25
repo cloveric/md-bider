@@ -3,10 +3,8 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use base64::Engine as _;
-
 use md_bider::app_init::build_initialization_script;
-use md_bider::assets::{UploadedAssetRegistry, content_type_for_path, sanitize_upload_name};
+use md_bider::assets::{UploadedAssetRegistry, content_type_for_path};
 use md_bider::desktop::{HostEvent, IpcCommand, to_webview_script};
 use md_bider::io::{read_text_with_fallback, write_text_utf8};
 use md_bider::runtime_paths::webview_data_directory;
@@ -95,93 +93,6 @@ fn normalize_path(path: Option<String>) -> Option<PathBuf> {
 fn default_name_from_path(path: Option<&PathBuf>) -> &str {
     path.and_then(|p| p.file_name().and_then(|name| name.to_str()))
         .unwrap_or("untitled.md")
-}
-
-fn unique_file_path(dir: &Path, name: &str) -> PathBuf {
-    let base = Path::new(name);
-    let stem = base.file_stem().and_then(|s| s.to_str()).unwrap_or("image");
-    let ext = base.extension().and_then(|e| e.to_str()).unwrap_or("png");
-
-    let candidate = dir.join(name);
-    if !candidate.exists() {
-        return candidate;
-    }
-
-    let mut counter: u32 = 1;
-    loop {
-        let numbered = dir.join(format!("{stem}_{counter}.{ext}"));
-        if !numbered.exists() {
-            return numbered;
-        }
-        counter += 1;
-    }
-}
-
-fn upload_image(
-    webview: &WebView,
-    assets: &SharedAssetRegistry,
-    tab_id: String,
-    name: &str,
-    data: &str,
-    dir: Option<String>,
-) {
-    let bytes = match base64::engine::general_purpose::STANDARD.decode(data) {
-        Ok(b) => b,
-        Err(err) => {
-            send_event(
-                webview,
-                HostEvent::Error {
-                    message: format!("图片解码失败: {err}"),
-                },
-            );
-            return;
-        }
-    };
-
-    let assets_dir = match dir.as_deref().filter(|d| !d.trim().is_empty()) {
-        Some(d) => PathBuf::from(d).join("assets"),
-        None => std::env::temp_dir().join("md-bider-uploads").join("assets"),
-    };
-
-    if let Err(err) = std::fs::create_dir_all(&assets_dir) {
-        send_event(
-            webview,
-            HostEvent::Error {
-                message: format!("创建目录失败: {err}"),
-            },
-        );
-        return;
-    }
-
-    let safe_name = sanitize_upload_name(name);
-    let dest = unique_file_path(&assets_dir, &safe_name);
-    if let Err(err) = std::fs::write(&dest, &bytes) {
-        send_event(
-            webview,
-            HostEvent::Error {
-                message: format!("图片保存失败: {err}"),
-            },
-        );
-        return;
-    }
-
-    let relative_url = format!(
-        "assets/{}",
-        dest.file_name()
-            .and_then(|f| f.to_str())
-            .unwrap_or(&safe_name)
-    );
-    if let Ok(mut registry) = assets.lock() {
-        registry.register_uploaded_asset(relative_url.clone(), dest);
-    }
-
-    send_event(
-        webview,
-        HostEvent::ImageUploaded {
-            tab_id,
-            url: relative_url,
-        },
-    );
 }
 
 fn register_document_assets(assets: &SharedAssetRegistry, path: &Path) {
@@ -357,15 +268,6 @@ fn main() -> wry::Result<()> {
                         save_content_to_path(&webview, &assets, target_tab_id, path, &content);
                     }
                 }
-                Ok(IpcCommand::UploadImage {
-                    tab_id,
-                    name,
-                    data,
-                    dir,
-                }) => {
-                    let target_tab_id = tab_id.unwrap_or_else(|| next_tab_id(&mut tab_seq));
-                    upload_image(&webview, &assets, target_tab_id, &name, &data, dir);
-                }
                 Ok(IpcCommand::CloseConfirmed) => {
                     *control_flow = ControlFlow::Exit;
                 }
@@ -400,10 +302,12 @@ mod tests {
         std::fs::write(&image_path, b"png").expect("write image");
 
         let assets: SharedAssetRegistry = Arc::new(Mutex::new(UploadedAssetRegistry::default()));
+        let document_path = dir.join("demo.md");
+        std::fs::write(&document_path, b"![photo](assets/photo.png)").expect("write document");
         assets
             .lock()
             .expect("lock registry")
-            .register_uploaded_asset("assets/photo.png", image_path);
+            .register_document_path(&document_path);
 
         let response = app_protocol_response("/assets/photo.png", &assets);
         assert_eq!(response.status(), StatusCode::OK);

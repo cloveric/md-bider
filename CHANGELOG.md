@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.11] - 2026-04-25
+
+### Changed
+
+- Simplify the editor toolbar for a cleaner Markdown reading and editing workflow.
+- Add hover descriptions to editor toolbar buttons.
+- Move export into the More menu and keep fullscreen there.
+- Remove hidden image upload IPC and new-file upload handling while preserving existing `assets/` image previews.
+
 ## [0.4.10] - 2026-04-25
 
 ### Changed
